@@ -1,0 +1,81 @@
+/* ================= 高对比度 Element Plus 暗黑主题 ================= */
+:root,
+html.dark {
+  /* 主色（金色） */
+  --el-color-primary: #f5d78a;
+  --el-color-primary-light-3: #e6c78a;
+  --el-color-primary-light-5: #d4b06a;
+  --el-color-primary-light-7: #b08a45;
+  --el-color-primary-light-9: #7a5a2a;
+  --el-color-primary-dark-2: #f0cc82;
+
+  /* 辅助色 */
+  --el-color-success: #4a7a9a;
+  --el-color-danger: #d44;
+  --el-color-warning: #c9922b;
+  --el-color-info: #8a7a8a;
+
+  /* 背景颜色（提升与面板的对比度） */
+  --el-bg-color: #20152a;
+  --el-bg-color-page: #0a0710;
+  --el-bg-color-overlay: #241630;
+  --el-fill-color-blank: #2a1a2a;     /* 输入框背景，比之前亮了一点 */
+  --el-fill-color-light: #301a30;
+  --el-fill-color-lighter: #3a2a3a;
+  --el-fill-color: #3a2a3a;
+
+  /* 边框颜色（提升清晰度） */
+  --el-border-color: #8a6a5a;          /* 更加明显的边框 */
+  --el-border-color-light: #7a5a4a;
+  --el-border-color-lighter: #6a4a3a;
+  --el-border-color-extra-light: #5a3a3a;
+  --el-border-color-dark: #9a7a6a;
+  --el-border-color-darker: #aa8a7a;
+
+  /* 文字颜色（大幅提升亮度） */
+  --el-text-color-primary: #f5e6c8;     /* 主文字更亮 */
+  --el-text-color-regular: #d8c6a3;     /* 常规文字更亮 */
+  --el-text-color-secondary: #b8a888;   /* 次级文字更亮 */
+  --el-text-color-placeholder: #9a8a7a; /* 占位符文字！这里必须亮起来！ */
+  --el-text-color-disabled: #6a5a6a;
+
+  --el-box-shadow: 0 12px 32px 4px rgba(0,0,0,0.6);
+}
+
+/* 输入框、下拉框、数字选择器的样式增强（重点修复看不清） */
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner,
+.el-input-number__increase,
+.el-input-number__decrease {
+  background-color: #2a1a2a !important;
+  box-shadow: 0 0 0 1px #8a6a5a inset !important;
+  color: #f5e6c8 !important;
+}
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1px #f5d78a inset !important;
+}
+/* 确保输入框内文字颜色是亮的 */
+.el-input__inner,
+.el-input-number__inner {
+  color: #f5e6c8 !important;
+}
+::placeholder {
+  color: #9a8a7a !important;
+}
+
+/* 统一主按钮为金色，并加粗文字 */
+.el-button--primary {
+  --el-button-bg-color: #f5d78a !important;
+  --el-button-border-color: #f5d78a !important;
+  --el-button-text-color: #1f1025 !important;
+  font-weight: bold;
+}
+/* 修改普通按钮（像“管理属性”等）的样式 */
+.el-button--default {
+  --el-button-bg-color: #3a2a3a !important;
+  --el-button-border-color: #6a5a6a !important;
+  --el-button-text-color: #e5d4b0 !important;
+}
+/* ================================================================ */

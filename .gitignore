@@ -1,0 +1,29 @@
+# --- Maven / Java ---
+backend/target/
+backend/*.jar
+backend/*.war
+backend/*.ear
+
+# --- Node / Vue ---
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.cache/
+
+# --- IDE ---
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+
+# --- 环境配置与敏感信息（强烈建议忽略） ---
+# 千万不要把真实的 application.yml 传上去！不然密码就泄露了。
+backend/src/main/resources/application.yml
+.env
+
+# --- 操作系统 ---
+.DS_Store
+Thumbs.db
