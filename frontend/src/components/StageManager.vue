@@ -24,34 +24,19 @@
         <div class="left-editor" ref="editorContainer" @scroll="saveScrollPosition">
           <el-tabs v-model="activeTab" class="sticky-tabs">
             <el-tab-pane label="📘 基础信息阶段" name="base">
-              <StageEditor
-                v-model:stages="baseStages"
-                type="base"
-                :attributes-list="attributesList"
-                :all-selectable-stages="allSelectableStages"
-                @type-change="handleTypeChange"
-              />
+              <StageEditor v-model:stages="baseStages" type="base" :attributes-list="attributesList"
+                :all-selectable-stages="allSelectableStages" @type-change="handleTypeChange" />
             </el-tab-pane>
             <el-tab-pane label="📙 人生经历阶段" name="life">
-              <StageEditor
-                v-model:stages="lifeStages"
-                type="life"
-                :attributes-list="attributesList"
-                :all-selectable-stages="allSelectableStages"
-                @type-change="handleTypeChange"
-              />
+              <StageEditor v-model:stages="lifeStages" type="life" :attributes-list="attributesList"
+                :all-selectable-stages="allSelectableStages" @type-change="handleTypeChange" />
             </el-tab-pane>
           </el-tabs>
         </div>
 
         <div class="right-graph" v-if="isDiagramVisible">
-          <StageFlowGraph
-            :currentGroupId="currentGroupId"
-            :userId="userId"
-            :baseStages="baseStages"
-            :lifeStages="lifeStages"
-            :jumpToStage="handleDiagramJump"
-          />
+          <StageFlowGraph :currentGroupId="currentGroupId" :userId="userId" :baseStages="baseStages"
+            :lifeStages="lifeStages" :jumpToStage="handleDiagramJump" />
         </div>
       </div>
 
@@ -322,15 +307,75 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.manager-panel { display: flex; flex-direction: column; gap: 15px; }
-.panel-header { display: flex; justify-content: space-between; align-items: center; }
-.header-actions { display: flex; gap: 10px; }
-.group-manager { display: flex; gap: 10px; }
-.split-body { display: flex; gap: 15px; overflow: hidden; min-height: 0; }
-.left-editor { flex: 1.3; overflow-y: auto; max-height: 65vh; padding-right: 10px; border-right: 1px solid #2a1a2a; }
-.right-graph { flex: 1; background: #0a0710; border-radius: 12px; overflow: hidden; min-height: 300px; border: 1px solid #2a1a2a; }
-.sticky-tabs { position: sticky; top: 0; z-index: 10; background: #1a1020; }
-.global-actions { display: flex; justify-content: flex-end; }
-.attr-mgr-list { max-height: 200px; overflow-y: auto; }
-.attr-mgr-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #2a1a2a; }
+.manager-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.group-manager {
+  display: flex;
+  gap: 10px;
+}
+
+.split-body {
+  display: flex;
+  gap: 15px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.left-editor {
+  flex: 1.3;
+  overflow-y: auto;
+  max-height: 65vh;
+  padding-right: 10px;
+  border-right: 1px solid #2a1a2a;
+}
+
+.right-graph {
+  flex: 1;
+  background: #0a0710;
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 300px;
+  border: 1px solid #2a1a2a;
+}
+
+.sticky-tabs :deep(.el-tabs__header) {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #1a1020;          /* 与编辑器背景一致，防止内容透出 */
+  padding: 4px 0;               /* 可选，增加一点间距 */
+  border-bottom: 1px solid #2a1a2a; /* 可选，添加分隔线 */
+}
+
+.global-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.attr-mgr-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.attr-mgr-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid #2a1a2a;
+}
 </style>

@@ -28,12 +28,16 @@
               <el-input v-model="opt.label" placeholder="选项" style="width: 140px;" />
               <el-input-number v-model="opt.weight" :min="1" size="small" />
               <el-input v-model="opt.descText" placeholder="描述" style="width: 140px;" />
+
+              <!-- 下一阶段下拉框：添加 popper-class 和 visible-change -->
               <el-select
                 v-model="opt.nextStageId"
                 placeholder="无分支"
                 filterable
                 clearable
                 style="width: 180px;"
+                popper-class="shared-stage-select"
+                @visible-change="handleDropdownVisible"
               >
                 <el-option :value="null" label="无分支（默认顺序）" />
                 <el-option
@@ -43,6 +47,7 @@
                   :label="stage.name"
                 />
               </el-select>
+
               <div class="dynamic-attr-wrapper">
                 <div class="attr-tag-list">
                   <el-tag
@@ -86,8 +91,13 @@
   </draggable>
 </template>
 
+<script>
+// 模块级共享滚动位置（所有 StageEditor 实例、所有“下一阶段”下拉框共用）
+let sharedScrollTop = 0
+</script>
+
 <script setup>
-import { ref, computed } from 'vue'   // ✅ 添加 computed 导入
+import { ref, computed } from 'vue'
 import draggable from 'vuedraggable'
 import { v4 as uuidv4 } from 'uuid'
 import { ElMessage } from 'element-plus'
@@ -105,8 +115,49 @@ const newLabel = ref('')
 const newWeight = ref(1)
 const newDesc = ref('')
 
-// ✅ 过滤掉没有 id 的临时阶段，保证 select 选项可用
+// 过滤掉没有 id 的临时阶段
 const selectableStages = computed(() => props.allSelectableStages.filter(s => s.id != null))
+
+// 查找当前可见的下拉滚动容器
+function findVisibleScrollWrap() {
+  const dropdowns = document.querySelectorAll('.el-select-dropdown')
+  for (const dropdown of dropdowns) {
+    if (dropdown.style.display !== 'none' && dropdown.offsetParent !== null) {
+      const scrollWrap = dropdown.querySelector('.el-scrollbar__wrap')
+      if (scrollWrap) return scrollWrap
+    }
+  }
+  return null
+}
+
+// 打开/关闭下拉框时处理滚动记忆
+function handleDropdownVisible(visible) {
+  if (visible) {
+    // 打开：延迟等待下拉面板渲染后恢复位置
+    setTimeout(() => {
+      const scrollWrap = findVisibleScrollWrap()
+      if (scrollWrap) {
+        scrollWrap.scrollTop = sharedScrollTop
+        // 移除旧监听，避免重复绑定
+        if (scrollWrap._sharedScrollHandler) {
+          scrollWrap.removeEventListener('scroll', scrollWrap._sharedScrollHandler)
+        }
+        const handler = () => {
+          sharedScrollTop = scrollWrap.scrollTop
+        }
+        scrollWrap.addEventListener('scroll', handler)
+        scrollWrap._sharedScrollHandler = handler
+      }
+    }, 80)
+  } else {
+    // 关闭时移除滚动监听
+    const scrollWrap = findVisibleScrollWrap()
+    if (scrollWrap && scrollWrap._sharedScrollHandler) {
+      scrollWrap.removeEventListener('scroll', scrollWrap._sharedScrollHandler)
+      scrollWrap._sharedScrollHandler = null
+    }
+  }
+}
 
 function handleDragSort(newOrder) {
   emit('update:stages', newOrder)
@@ -136,7 +187,7 @@ function addOption(stageIdx) {
     label: newLabel.value.trim(),
     weight: newWeight.value || 1,
     descText: newDesc.value.trim(),
-    nextStageId: null,   // 使用 null 初始化
+    nextStageId: null,
     attributeGains: {}
   })
   newLabel.value = ''

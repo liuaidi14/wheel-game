@@ -82,6 +82,7 @@ import Wheel from './components/Wheel.vue'
 import StageManager from './components/StageManager.vue'
 import AttributeRadar from './components/AttributeRadar.vue'
 
+
 // ==================== 常量 ====================
 const STORAGE_KEY_GROUP = 'lastGroupId'
 
@@ -104,6 +105,7 @@ const lifeHistory = ref([])
 const baseCurrentResult = ref(null)
 const lifeCurrentResult = ref(null)
 const wheelComp = ref(null)
+const ATTR_MAX = 100
 
 // ==================== 计算属性 ====================
 const currentBaseStage = computed(() => baseStages.value[baseIndex.value] || { name: '无', options: [] })
@@ -276,12 +278,26 @@ function confirmResult() {
     return
   }
 
+  console.log('选中选项:', selected.label, 'attributeGains:', selected.attributeGains);
+  console.log('累加前 characterAttributes:', JSON.parse(JSON.stringify(characterAttributes.value)));
+
   // 应用属性增益
   if (selected.attributeGains) {
     Object.entries(selected.attributeGains).forEach(([key, value]) => {
-      characterAttributes.value[key] = (characterAttributes.value[key] || 0) + value
+      const oldVal = Number(characterAttributes.value[key] || 0)
+      const numValue = Number(value)
+      if (!isNaN(numValue)) {
+        let newVal = oldVal + numValue
+        if (newVal > ATTR_MAX) {
+          newVal = ATTR_MAX
+          ElMessage.warning(`属性【${key}】已达到上限 ${ATTR_MAX}，溢出部分被忽略`)
+        }
+        characterAttributes.value[key] = newVal
+      }
     })
   }
+
+  console.log('累加后 characterAttributes:', JSON.parse(JSON.stringify(characterAttributes.value)));
 
   // 根据 nextStageName 跳转
   // 新代码：使用 nextStageId 关联

@@ -17,6 +17,7 @@ const props = defineProps({
 })
 
 const chartRef = ref(null)
+let currentMax = 25;
 let myChart = null
 let resizeHandler = null // 保存 resize 事件处理函数引用
 
@@ -37,8 +38,11 @@ const renderChart = async () => {
   const attrNames = Object.keys(props.attributes)
   const attrValues = Object.values(props.attributes)
 
-  // 计算雷达图最大值：至少20，比实际最大值多5，避免贴边
-  const maxVal = attrValues.length > 0 ? Math.max(20, ...attrValues) + 5 : 20
+  const actualMax = attrValues.length > 0 ? Math.max(...attrValues) : 0
+  if (actualMax > currentMax) {
+    currentMax = actualMax + 5 // 只增大，不减小
+  }
+  const maxVal = currentMax
 
   const indicator = attrNames.map(name => ({
     name,
@@ -156,12 +160,14 @@ onBeforeUnmount(() => {
   border-radius: 20px;
   padding: 10px 10px 0 10px;
 }
+
 .radar-title {
   color: #f5e6b0;
   font-weight: bold;
   text-align: center;
   margin-bottom: 0px;
 }
+
 .radar-chart {
   width: 100%;
   height: 260px;
