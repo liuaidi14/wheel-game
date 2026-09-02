@@ -41,7 +41,7 @@
           </div>
 
           <!-- 折叠内容 -->
-          <div v-show="!isCollapsed(element)">
+          <div v-if="!isCollapsed(element)">
             <div class="option-list">
               <div v-for="(opt, oIdx) in element.options" :key="opt._uid" class="option-item">
                 <el-input v-model="opt.label" placeholder="选项" style="width: 140px;" />
@@ -55,6 +55,7 @@
                   style="width: 180px;"
                 >
                   <el-option :value="null" label="无分支（默认顺序）" />
+                  <el-option :value="-1" label="🏁 结局" />
                   <el-option
                     v-for="stage in selectableStages"
                     :key="stage.id"
@@ -134,11 +135,11 @@ const collapsedMap = reactive({})
 const selectableStages = computed(() => props.allSelectableStages.filter(s => s.id != null))
 
 function isCollapsed(stage) {
-  return collapsedMap[stage._uid] || false
+  return collapsedMap[stage._uid] ?? true
 }
 
 function toggleCollapse(stage) {
-  collapsedMap[stage._uid] = !collapsedMap[stage._uid]
+  collapsedMap[stage._uid] = !isCollapsed(stage)
 }
 
 function duplicateStage(index) {

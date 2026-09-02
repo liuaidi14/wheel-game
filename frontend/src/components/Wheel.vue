@@ -138,6 +138,7 @@ function resetToGap() {
 // 播放旋转音效
 function playSpinSound() {
   if (audioSpin) {
+    audioSpin.volume = 0.5;
     audioSpin.currentTime = 0
     audioSpin.loop = true
     audioSpin.play().catch(() => {})

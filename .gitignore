@@ -27,3 +27,11 @@ backend/src/main/resources/application.yml
 # --- 操作系统 ---
 .DS_Store
 Thumbs.db
+
+# --- Electron 依赖和构建产物 ---
+electron/
+
+# --- 前端构建临时文件 ---
+frontend/npm
+frontend/vite
+frontend/wheel-frontend@0.0.0

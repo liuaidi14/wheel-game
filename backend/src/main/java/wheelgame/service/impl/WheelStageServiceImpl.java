@@ -11,6 +11,7 @@ import wheelgame.mapper.WheelStageMapper;
 import wheelgame.service.WheelStageService;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class WheelStageServiceImpl implements WheelStageService {
@@ -22,6 +23,7 @@ public class WheelStageServiceImpl implements WheelStageService {
 
     @Override
     public Map<String, List<WheelStage>> getStagesByUser(Long userId, Long groupId) {
+        // 1. 查询所有阶段
         List<WheelStage> stages = stageMapper.selectList(
                 new LambdaQueryWrapper<WheelStage>()
                         .eq(WheelStage::getUserId, userId)
@@ -29,18 +31,32 @@ public class WheelStageServiceImpl implements WheelStageService {
                         .orderByAsc(WheelStage::getListOrder)
         );
 
-        Map<Long, String> stageIdToName = new HashMap<>();
-        for (WheelStage stage : stages) {
-            stageIdToName.put(stage.getId(), stage.getName());
+        if (stages.isEmpty()) {
+            Map<String, List<WheelStage>> empty = new HashMap<>();
+            empty.put("base", new ArrayList<>());
+            empty.put("life", new ArrayList<>());
+            return empty;
         }
 
-        for (WheelStage stage : stages) {
-            List<WheelOption> options = optionMapper.selectList(
-                    new LambdaQueryWrapper<WheelOption>()
-                            .eq(WheelOption::getStageId, stage.getId())
-                            .orderByAsc(WheelOption::getSortOrder)
-            );
+        // 2. 批量查询所有选项，避免 N+1 问题
+        List<Long> stageIds = stages.stream().map(WheelStage::getId).collect(Collectors.toList());
+        List<WheelOption> allOptions = optionMapper.selectList(
+                new LambdaQueryWrapper<WheelOption>()
+                        .in(WheelOption::getStageId, stageIds)
+                        .orderByAsc(WheelOption::getSortOrder)
+        );
 
+        // 3. 按 stageId 分组
+        Map<Long, List<WheelOption>> optionsMap = allOptions.stream()
+                .collect(Collectors.groupingBy(WheelOption::getStageId));
+
+        // 4. 建立 ID 到名称的映射
+        Map<Long, String> stageIdToName = stages.stream()
+                .collect(Collectors.toMap(WheelStage::getId, WheelStage::getName));
+
+        // 5. 组装 options 和 nextStageName
+        for (WheelStage stage : stages) {
+            List<WheelOption> options = optionsMap.getOrDefault(stage.getId(), new ArrayList<>());
             for (WheelOption opt : options) {
                 if (opt.getNextStageId() != null) {
                     opt.setNextStageName(stageIdToName.get(opt.getNextStageId()));
@@ -49,17 +65,10 @@ public class WheelStageServiceImpl implements WheelStageService {
             stage.setOptions(options);
         }
 
+        // 6. 分组返回
         Map<String, List<WheelStage>> result = new HashMap<>();
-        result.put("base", new ArrayList<>());
-        result.put("life", new ArrayList<>());
-
-        for (WheelStage stage : stages) {
-            if ("base".equals(stage.getType())) {
-                result.get("base").add(stage);
-            } else {
-                result.get("life").add(stage);
-            }
-        }
+        result.put("base", stages.stream().filter(s -> "base".equals(s.getType())).collect(Collectors.toList()));
+        result.put("life", stages.stream().filter(s -> "life".equals(s.getType())).collect(Collectors.toList()));
         return result;
     }
 

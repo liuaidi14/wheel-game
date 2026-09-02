@@ -61,6 +61,7 @@
         <div class="final-summary">
           <div><strong>基础信息：</strong>{{ baseHistory.join(' + ') || '无' }}</div>
           <div><strong>人生经历：</strong>{{ lifeHistory.join(' → ') || '无' }}</div>
+          <div class="ending-text">{{ endingText }}</div>
         </div>
         <el-button type="danger" @click="resetGame" round>重新开始</el-button>
       </div>
@@ -106,6 +107,7 @@ const baseCurrentResult = ref(null)
 const lifeCurrentResult = ref(null)
 const wheelComp = ref(null)
 const ATTR_MAX = 100
+const endingText = ref('')
 
 // ==================== 计算属性 ====================
 const currentBaseStage = computed(() => baseStages.value[baseIndex.value] || { name: '无', options: [] })
@@ -298,6 +300,17 @@ function confirmResult() {
   }
 
   console.log('累加后 characterAttributes:', JSON.parse(JSON.stringify(characterAttributes.value)));
+
+  // 检查是否选择了结局（nextStageId === -1）
+  if (selected.nextStageId !== null && selected.nextStageId !== undefined) {
+    const nextId = Number(selected.nextStageId)
+    if (nextId === -1) {
+      phase.value = 'done'
+      endingText.value = selected.descText || '你的人生画上了句号。'
+      resetWheel()
+      return
+    }
+  }
 
   // 根据 nextStageName 跳转
   // 新代码：使用 nextStageId 关联
