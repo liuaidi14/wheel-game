@@ -12,4 +12,9 @@ public class WheelGroup {
     private Long id;
     private Long userId;
     private String name;
+    /**
+     * 剧本组类型：life（人生转盘）| battle（对战）
+     * 用于前后端隔离，替代前端 localStorage 的 battleGroupIds 方案
+     */
+    private String type;
 }

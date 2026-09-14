@@ -84,6 +84,11 @@ public class WheelStageServiceImpl implements WheelStageService {
         for (WheelStage old : oldStages) {
             oldStageIdMap.put(old.getId(), old);
         }
+        // 建立旧阶段名称映射，用于同名阶段更新而非插入
+        Map<String, WheelStage> oldStageNameMap = new HashMap<>();
+        for (WheelStage old : oldStages) {
+            oldStageNameMap.put(old.getName(), old);
+        }
 
         List<WheelStage> allNewStages = new ArrayList<>();
         if (stagesMap.get("base") != null) allNewStages.addAll(stagesMap.get("base"));
@@ -99,12 +104,21 @@ public class WheelStageServiceImpl implements WheelStageService {
             stage.setType(stage.getType() != null ? stage.getType() : "base");
 
             Long stageId = stage.getId();
+            // 先按id判断
             if (stageId != null && oldStageIdMap.containsKey(stageId)) {
                 stageMapper.updateById(stage);
             } else {
-                stage.setId(null);
-                stageMapper.insert(stage);
-                stageId = stage.getId();
+                // 再按名称判断：如果有同名旧阶段，更新它而不是插入（避免唯一约束冲突）
+                WheelStage sameName = oldStageNameMap.get(stage.getName());
+                if (sameName != null) {
+                    stage.setId(sameName.getId());
+                    stageMapper.updateById(stage);
+                    stageId = sameName.getId();
+                } else {
+                    stage.setId(null);
+                    stageMapper.insert(stage);
+                    stageId = stage.getId();
+                }
             }
             newStageIds.add(stageId);
             nameToId.put(stage.getName(), stageId);
