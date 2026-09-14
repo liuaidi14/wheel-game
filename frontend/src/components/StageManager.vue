@@ -8,7 +8,7 @@
             {{ isDiagramVisible ? '隐藏结构图' : '查看结构图' }}
           </el-button>
           <el-button type="info" @click="isAttrManagerVisible = true" round>⚙️ 管理属性</el-button>
-          <el-button type="info" @click="isGroupManagerVisible = true" round>⚙️ 管理剧本</el-button>
+          <el-button type="info" @click="openGroupManager" round>⚙️ 管理剧本</el-button>
           <el-button type="danger" @click="closePanel" round>✕ 关闭</el-button>
         </div>
       </div>
@@ -57,15 +57,58 @@
       </div>
     </el-dialog>
 
-    <!-- 剧本管理弹窗 -->
-    <el-dialog v-model="isGroupManagerVisible" title="⚙️ 剧本管理" width="400px" append-to-body>
-      <el-input v-model.trim="modalNewGroupName" placeholder="输入新剧本名" />
-      <el-button type="primary" @click="createGroupInModal" style="margin-top: 10px;">➕ 创建</el-button>
-      <div style="border-top: 1px solid #eee; margin: 10px 0;"></div>
-      <el-input v-model.trim="groupEditName" placeholder="重命名当前剧本" />
-      <el-button type="success" @click="saveGroupName" style="margin-top: 10px;">✅ 重命名</el-button>
-      <div style="border-top: 1px solid #eee; margin: 10px 0;"></div>
-      <el-button type="danger" style="width: 100%;" @click="deleteCurrentGroup">🗑️ 删除此剧本组（不可撤销）</el-button>
+    <!-- 剧本管理弹窗（所有剧本列表 + 逐个删除） -->
+    <el-dialog v-model="isGroupManagerVisible" title="⚙️ 剧本管理" width="480px" append-to-body>
+      <!-- 创建新剧本 -->
+      <div class="gm-section">
+        <div class="gm-section-title">创建新剧本</div>
+        <div class="gm-row">
+          <el-input v-model.trim="modalNewGroupName" placeholder="输入新剧本名" style="flex: 1;" />
+          <el-button type="primary" @click="createGroupInModal">➕ 创建</el-button>
+        </div>
+      </div>
+
+      <div class="gm-divider"></div>
+
+      <!-- 所有剧本列表 -->
+      <div class="gm-section">
+        <div class="gm-section-title">所有剧本（共 {{ groups.length }} 个）</div>
+        <div class="gm-list">
+          <div v-for="g in groups" :key="g.id" class="gm-group-item"
+               :class="{ 'gm-group-current': g.id === currentGroupId }">
+            <div class="gm-group-info">
+              <span v-if="g.id === currentGroupId" class="gm-current-tag">● 当前</span>
+              <span class="gm-group-name">{{ g.name }}</span>
+              <el-tag v-if="g.type" size="small" class="gm-type-tag"
+                      :type="g.type === 'battle' ? 'danger' : 'info'">
+                {{ g.type === 'battle' ? '对战' : '人生' }}
+              </el-tag>
+            </div>
+            <div class="gm-group-actions">
+              <el-button size="small" @click="switchToGroup(g.id)" :disabled="g.id === currentGroupId">
+                切换
+              </el-button>
+              <el-button size="small" type="danger" @click="deleteGroupById(g.id)">
+                删除
+              </el-button>
+            </div>
+          </div>
+          <div v-if="groups.length === 0" class="gm-empty">
+            暂无剧本组，先在上方创建一个吧
+          </div>
+        </div>
+      </div>
+
+      <div class="gm-divider"></div>
+
+      <!-- 重命名当前剧本 -->
+      <div class="gm-section">
+        <div class="gm-section-title">重命名当前剧本</div>
+        <div class="gm-row">
+          <el-input v-model.trim="groupEditName" placeholder="输入新名称" style="flex: 1;" />
+          <el-button type="success" @click="saveGroupName">✅ 重命名</el-button>
+        </div>
+      </div>
     </el-dialog>
   </el-dialog>
 </template>
@@ -153,9 +196,13 @@ async function switchGroup() {
 }
 
 function openGroupManager() {
-  if (!currentGroupId.value) return
-  const currentName = groups.value.find(g => g.id === currentGroupId.value)?.name || ''
-  groupEditName.value = currentName
+  // 打开弹窗时，把当前组名填入重命名输入框
+  if (currentGroupId.value) {
+    const currentName = groups.value.find(g => g.id === currentGroupId.value)?.name || ''
+    groupEditName.value = currentName
+  } else {
+    groupEditName.value = ''
+  }
   isGroupManagerVisible.value = true
 }
 
@@ -169,16 +216,33 @@ function createGroupInModal() {
 function saveGroupName() {
   if (groupEditName.value.trim() && currentGroupId.value) {
     emit('renameGroup', { groupId: currentGroupId.value, newName: groupEditName.value.trim() })
-    isGroupManagerVisible.value = false
   }
 }
 
 function deleteCurrentGroup() {
   if (!currentGroupId.value) return
-  const currentName = groups.value.find(g => g.id === currentGroupId.value)?.name || '当前剧本组'
-  if (confirm(`⚠️ 确定要删除剧本组 "${currentName}" 吗？此操作不可撤销！`)) {
-    emit('deleteGroup', { groupId: currentGroupId.value })
-    isGroupManagerVisible.value = false
+  deleteGroupById(currentGroupId.value)
+}
+
+// 切换到指定剧本组
+function switchToGroup(groupId) {
+  currentGroupId.value = groupId
+  emit('update:currentGroupId', groupId)
+  // 同步更新重命名输入框
+  const g = groups.value.find(item => item.id === groupId)
+  groupEditName.value = g?.name || ''
+}
+
+// 删除指定剧本组（逐个删除）
+function deleteGroupById(groupId) {
+  const group = groups.value.find(g => g.id === groupId)
+  const name = group?.name || '该剧本组'
+  if (!confirm(`⚠️ 确定要删除剧本组 "${name}" 吗？此操作不可撤销！`)) return
+  emit('deleteGroup', { groupId })
+  // 如果删除的是当前组，清空当前选择
+  if (groupId === currentGroupId.value) {
+    currentGroupId.value = null
+    groupEditName.value = ''
   }
 }
 
@@ -357,9 +421,9 @@ onMounted(() => {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: #1a1020;          /* 与编辑器背景一致，防止内容透出 */
-  padding: 4px 0;               /* 可选，增加一点间距 */
-  border-bottom: 1px solid #2a1a2a; /* 可选，添加分隔线 */
+  background: #1a1020;
+  padding: 4px 0;
+  border-bottom: 1px solid #2a1a2a;
 }
 
 .global-actions {
@@ -377,5 +441,95 @@ onMounted(() => {
   justify-content: space-between;
   padding: 6px 0;
   border-bottom: 1px solid #2a1a2a;
+}
+
+/* ===== 剧本管理弹窗样式 ===== */
+.gm-section {
+  margin-bottom: 4px;
+}
+
+.gm-section-title {
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.gm-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.gm-divider {
+  border-top: 1px solid #2a1a2a;
+  margin: 12px 0;
+}
+
+.gm-list {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.gm-group-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.gm-group-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.gm-group-current {
+  background: rgba(155, 120, 200, 0.15);
+  border-color: rgba(155, 120, 200, 0.4);
+}
+
+.gm-group-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.gm-current-tag {
+  color: #c9a7e8;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.gm-group-name {
+  color: #e0dce8;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gm-type-tag {
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+.gm-group-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: 10px;
+}
+
+.gm-empty {
+  text-align: center;
+  color: #666;
+  padding: 24px 0;
+  font-size: 13px;
 }
 </style>

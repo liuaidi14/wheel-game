@@ -13,40 +13,39 @@ const props = defineProps({
   attributes: {
     type: Object,
     default: () => ({})
+  },
+  max: {
+    type: Number,
+    default: 25
+  },
+  radius: {
+    type: String,
+    default: '70%'
   }
 })
 
 const chartRef = ref(null)
-let currentMax = 25;
 let myChart = null
-let resizeHandler = null // 保存 resize 事件处理函数引用
+let resizeHandler = null
 
 const hasAttributes = computed(() => {
   return props.attributes && Object.keys(props.attributes).length > 0
 })
 
-// 构建并渲染/更新图表
 const renderChart = async () => {
   await nextTick()
   if (!chartRef.value || !hasAttributes.value) return
 
-  // 初始化图表实例（如果尚未创建）
   if (!myChart) {
     myChart = echarts.init(chartRef.value, 'dark')
   }
 
   const attrNames = Object.keys(props.attributes)
-  const attrValues = Object.values(props.attributes)
-
-  const actualMax = attrValues.length > 0 ? Math.max(...attrValues) : 0
-  if (actualMax > currentMax) {
-    currentMax = actualMax + 5 // 只增大，不减小
-  }
-  const maxVal = currentMax
+  const attrValues = Object.values(props.attributes).map(v => Math.min(Number(v) || 0, props.max))
 
   const indicator = attrNames.map(name => ({
     name,
-    max: maxVal
+    max: props.max
   }))
 
   const option = {
@@ -58,11 +57,11 @@ const renderChart = async () => {
       indicator,
       shape: 'circle',
       center: ['50%', '50%'],
-      radius: '70%',
-      splitNumber: 4,
+      radius: props.radius,
+      splitNumber: 5,
       axisName: {
         color: '#f5e6b0',
-        fontSize: 14
+        fontSize: 12
       },
       splitLine: {
         lineStyle: {
@@ -104,18 +103,15 @@ const renderChart = async () => {
     }]
   }
 
-  // 关键：notMerge: true 保证每次更新都重新执行动画
   myChart.setOption(option, true)
 }
 
-// 清空图表（当无属性时）
 const clearChart = () => {
   if (myChart) {
     myChart.clear()
   }
 }
 
-// 监听属性变化
 watch(() => props.attributes, (newVal) => {
   if (newVal && Object.keys(newVal).length > 0) {
     renderChart()
@@ -124,7 +120,6 @@ watch(() => props.attributes, (newVal) => {
   }
 }, { deep: true })
 
-// 处理窗口大小变化
 const handleResize = () => {
   if (myChart) {
     myChart.resize()
@@ -137,7 +132,6 @@ onMounted(() => {
   window.addEventListener('resize', resizeHandler)
 })
 
-// 清理资源：移除监听器、销毁图表实例
 onBeforeUnmount(() => {
   if (resizeHandler) {
     window.removeEventListener('resize', resizeHandler)
@@ -170,6 +164,6 @@ onBeforeUnmount(() => {
 
 .radar-chart {
   width: 100%;
-  height: 260px;
+  aspect-ratio: 1 / 1;
 }
 </style>

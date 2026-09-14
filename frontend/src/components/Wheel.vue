@@ -19,14 +19,84 @@ let rotation = 0
 let animId = null
 let spinning = false
 
-// 音效
+// ==================== 音效（增强版：预加载 + 失败重试） ====================
 let audioSpin = null
 let audioStop = null
-try {
-  audioSpin = new Audio('/sounds/spin.mp3')
-  audioStop = new Audio('/sounds/stop.mp3')
-} catch (e) {
-  console.warn('找不到音效文件，将静音运行。')
+function createAudio(url) {
+  try {
+    const a = new Audio(url)
+    a.preload = 'auto'
+    return a
+  } catch (e) {
+    console.warn('创建音效失败：', url)
+    return null
+  }
+}
+audioSpin = createAudio('/sounds/spin.mp3')
+audioStop = createAudio('/sounds/stop.mp3')
+
+// 播放旋转音效（带失败重试 + 音量淡入，避免突然炸耳）
+let spinFadeTimer = null
+function playSpinSound() {
+  if (!audioSpin) return
+  try {
+    clearInterval(spinFadeTimer)
+    audioSpin.volume = 0
+    audioSpin.currentTime = 0
+    audioSpin.loop = true
+    const p = audioSpin.play()
+    if (p && p.catch) {
+      p.catch(() => {
+        // 音频可能还没加载完成或被浏览器拦截，延迟重试一次
+        setTimeout(() => {
+          if (!audioSpin) return
+          audioSpin.currentTime = 0
+          audioSpin.loop = true
+          audioSpin.play().catch(() => {})
+        }, 300)
+      })
+    }
+    // 音量 0 → 0.42 淡入
+    let v = 0
+    spinFadeTimer = setInterval(() => {
+      if (!audioSpin) { clearInterval(spinFadeTimer); return }
+      v = Math.min(0.42, v + 0.045)
+      audioSpin.volume = v
+      if (v >= 0.42) clearInterval(spinFadeTimer)
+    }, 40)
+  } catch (e) {
+    console.warn('旋转音效播放失败：', e)
+  }
+}
+
+// 停止旋转音效（音量淡出后暂停）并播放停止音效
+function stopSpinSound() {
+  if (audioSpin) {
+    clearInterval(spinFadeTimer)
+    let v = audioSpin.volume || 0.42
+    const fadeOut = setInterval(() => {
+      if (!audioSpin) { clearInterval(fadeOut); return }
+      v -= 0.06
+      if (v <= 0) {
+        v = 0
+        clearInterval(fadeOut)
+        audioSpin.pause()
+        audioSpin.currentTime = 0
+      } else {
+        audioSpin.volume = v
+      }
+    }, 28)
+  }
+  if (audioStop) {
+    try {
+      audioStop.volume = 0.55
+      audioStop.currentTime = 0
+      const p = audioStop.play()
+      if (p && p.catch) p.catch(() => {})
+    } catch (e) {
+      console.warn('停止音效播放失败：', e)
+    }
+  }
 }
 
 // 常量配置
@@ -133,28 +203,6 @@ function getSliceColor(opt, index, totalLength) {
 function resetToGap() {
   rotation = -Math.PI / 2
   draw(rotation)
-}
-
-// 播放旋转音效
-function playSpinSound() {
-  if (audioSpin) {
-    audioSpin.volume = 0.5;
-    audioSpin.currentTime = 0
-    audioSpin.loop = true
-    audioSpin.play().catch(() => {})
-  }
-}
-
-// 停止旋转音效并播放停止音效
-function stopSpinSound() {
-  if (audioSpin) {
-    audioSpin.pause()
-    audioSpin.currentTime = 0
-  }
-  if (audioStop) {
-    audioStop.currentTime = 0
-    audioStop.play().catch(() => {})
-  }
 }
 
 // 计算目标角度
